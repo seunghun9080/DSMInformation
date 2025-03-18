@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -19,9 +20,14 @@ import org.thinkinggms.utils.URLUtils;
 
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 public class DiscordListener implements EventListener {
 
@@ -45,7 +51,8 @@ public class DiscordListener implements EventListener {
 		return "";
 	}
 
-	@Override
+	@SuppressWarnings("SpellCheckingInspection")
+    @Override
 	public void onEvent(@NotNull GenericEvent e) {
 		if (e instanceof SlashCommandInteractionEvent event) {
 			switch (event.getName()) {
@@ -106,7 +113,7 @@ public class DiscordListener implements EventListener {
 				}
 				case "일정제거" -> {
 					OptionMapping id = event.getOption("아이디");
-					if (SQLUtils.removeEvent(id != null ? id.getAsInt() : -1, event.getUser().getId())) event.reply("일정이 좀 많은 것 같아서 니 일정은 지웠어.").queue();
+					if (SQLUtils.removeEvent(id != null ? id.getAsInt() : -1, event.getUser().getId())) event.reply("알겠어, 지금 지워줄게.").queue();
 					else event.reply("노트에 일정이 많아서 그런 걸수도 있는데, 그런 일정은 없어.").queue();
 				}
 				case "일정확인" -> {
@@ -145,7 +152,8 @@ public class DiscordListener implements EventListener {
 						JsonObject data = URLUtils.getSchoolSchedule(format(new Date(), ""), 1000);
 						int date = Integer.parseInt(format(new Date(), ""));
 						JsonObject o = data.getAsJsonArray("SchoolSchedule").get(1).getAsJsonObject().getAsJsonArray("row").asList().stream().filter(el -> Integer.parseInt(el.getAsJsonObject().get("AA_YMD").getAsString()) >= date).filter(el -> el.getAsJsonObject().get("EVENT_NM").getAsString().contains("방학")).limit(1).toList().getFirst().getAsJsonObject();
-						String dateString = o.get("AA_YMD").getAsString();
+                        //noinspection DuplicatedCode
+                        String dateString = o.get("AA_YMD").getAsString();
                         //noinspection MagicConstant, deprecation
                         long subDate = new Date(Integer.parseInt(dateString.substring(0, 4)) - 1900, Integer.parseInt(dateString.substring(4, 6)) - 1, Integer.parseInt(dateString.substring(6))).getTime() / 1000;
 						Date leftTime = new Date(subDate * 1000 - new Date().getTime());
@@ -161,7 +169,8 @@ public class DiscordListener implements EventListener {
 						JsonObject data = URLUtils.getSchoolSchedule(format(new Date(), ""), 1000);
 						int date = Integer.parseInt(format(new Date(), ""));
 						JsonObject o = data.getAsJsonArray("SchoolSchedule").get(1).getAsJsonObject().getAsJsonArray("row").asList().stream().filter(el -> Integer.parseInt(el.getAsJsonObject().get("AA_YMD").getAsString()) >= date).filter(el -> ((sat != null && !sat.getAsBoolean()) || !el.getAsJsonObject().get("EVENT_NM").getAsString().equalsIgnoreCase("토요휴업일")) && el.getAsJsonObject().get("SBTR_DD_SC_NM").getAsString().matches("공휴일|휴업일")).limit(1).toList().getFirst().getAsJsonObject();
-						String dateString = o.get("AA_YMD").getAsString();
+                        //noinspection DuplicatedCode
+                        String dateString = o.get("AA_YMD").getAsString();
                         //noinspection MagicConstant, deprecation
                         long subDate = new Date(Integer.parseInt(dateString.substring(0, 4)) - 1900, Integer.parseInt(dateString.substring(4, 6)) - 1, Integer.parseInt(dateString.substring(6))).getTime() / 1000;
 						Date leftTime = new Date(subDate * 1000 - new Date().getTime());
@@ -182,6 +191,10 @@ public class DiscordListener implements EventListener {
 						}
 						if (StringUtils.outCensor(out.getAsString())) {
 							event.reply("내가 그런 말 할 이미지가 아니라는건 알고 있지?").queue();
+							if (event.isFromGuild()) {
+								Member member = event.getMember();
+								if (member != null) member.timeoutFor(Duration.ofMinutes(1)).reason("검열 적발").queue();
+							}
 							return;
 						}
 						if (SQLUtils.addMessage(in.getAsString(), out.getAsString(), event.getUser().getId())) {
@@ -224,7 +237,42 @@ public class DiscordListener implements EventListener {
 			}
 		}
 		if (e instanceof MessageReceivedEvent event) {
-			if (event.getAuthor().isBot() || event.getAuthor().isSystem()) return;
+			if (event.getAuthor().getId().equals("1250810431375806565")) {
+				String sql = "SELECT * FROM `dsm_information`.`valbungg_message_log` WHERE input_message=?";
+                //noinspection DuplicatedCode
+                try (PreparedStatement statement = SQLUtils.getConnection().prepareStatement(sql)) {
+					List<MessageResponseData> list = new ArrayList<>();
+					statement.setString(1, event.getMessage().getContentRaw());
+					ResultSet result = statement.executeQuery();
+					while (result.next())
+						list.add(new MessageResponseData(result.getString("input_message"), result.getString("output_message"), "0"));
+					if (!list.isEmpty()) {
+						MessageResponseData data = list.get(DSMInformation.random.nextInt(0, list.size()));
+						event.getMessage().reply(data.outputMessage).setAllowedMentions(new ArrayList<>()).mentionRepliedUser(false).queue();
+					}
+				} catch (SQLException ex) {
+					ex.printStackTrace(System.out);
+				}
+				return;
+			}
+			if (event.getAuthor().isBot() || event.getAuthor().isSystem()) {
+				String sql = "SELECT * FROM `dsm_information`.`bot_message_log` WHERE input_message=?";
+                //noinspection DuplicatedCode
+                try (PreparedStatement statement = SQLUtils.getConnection().prepareStatement(sql)) {
+					List<MessageResponseData> list = new ArrayList<>();
+					statement.setString(1, event.getMessage().getContentRaw());
+					ResultSet result = statement.executeQuery();
+					while (result.next())
+						list.add(new MessageResponseData(result.getString("input_message"), result.getString("output_message"), "0"));
+					if (!list.isEmpty()) {
+						MessageResponseData data = list.get(DSMInformation.random.nextInt(0, list.size()));
+						event.getMessage().reply(data.outputMessage).setAllowedMentions(new ArrayList<>()).mentionRepliedUser(false).queue();
+					}
+				} catch (SQLException ex) {
+					ex.printStackTrace(System.out);
+				}
+				return;
+			}
 			label: if (event.getMessage().getContentRaw().contains("루아야") || event.getMessage().getMentions().isMentioned(event.getJDA().getSelfUser())) {
 				if (event.getMessage().getContentRaw().equalsIgnoreCase("루아야") || event.getMessage().getContentRaw().equalsIgnoreCase("<@1345676526154158131>")) {
 					event.getMessage().reply("응, 불렀어?").mentionRepliedUser(false).queue();
