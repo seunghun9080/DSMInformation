@@ -40,7 +40,7 @@ public class DSMInformation {
                                 .addChoice("중식", "중식")
                                 .addChoice("석식", "석식")
                 ), new CommandDataImpl("시간표", "한 주의 시간표를 출력합니다.").addOptions(
-                        new OptionData(OptionType.STRING, "학반", "기준 학년과 반입니다. (ex. 1-1)").setRequired(true)
+                        new OptionData(OptionType.STRING, "학반", "기준 학년과 반입니다. (ex. 1-1)").setRequired(false)
                                 .addChoice("1-1", "1-1")
                                 .addChoice("1-2", "1-2")
                                 .addChoice("1-3", "1-3")
@@ -69,8 +69,8 @@ public class DSMInformation {
                 ), new CommandDataImpl("다음쉬는날", "다음 쉬는날을 확인합니다.").addOptions(
                         new OptionData(OptionType.BOOLEAN, "토요일제외", "쉬는 날 중 토요일을 제외합니다. (기본값: True)").setRequired(false)
                 ), new CommandDataImpl("학습", "루아에게 메시지를 학습시킵니다.").addOptions(
-                        new OptionData(OptionType.STRING, "입력메시지", "반응할 메시지를 정합니다. (ex. 대마고)").setRequired(true),
-                        new OptionData(OptionType.STRING, "출력메시지", "대답할 메시지를 정합니다. (ex. 대덕소프트웨어마이스터고등학교)").setRequired(true).setMaxLength(1900)
+                        new OptionData(OptionType.STRING, "입력메시지", "반응할 메시지를 정합니다. (ex. 대마고)").setRequired(true).setMinLength(2).setMaxLength(100),
+                        new OptionData(OptionType.STRING, "출력메시지", "대답할 메시지를 정합니다. (ex. 대덕소프트웨어마이스터고등학교)").setRequired(true).setMinLength(2).setMaxLength(100)
                 ), new CommandDataImpl("학습확인", "루아에게 학습시킨 메시지를 확인합니다.").addOptions(
                         new OptionData(OptionType.USER, "유저", "확인할 유저를 정합니다.").setRequired(false)
                 ), new CommandDataImpl("망각", "루아에게 가르친 메시지를 망각시킵니다.").addOptions(

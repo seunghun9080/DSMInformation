@@ -29,6 +29,46 @@ public class SQLUtils {
         return connection;
     }
 
+    public static void addUser(String userId) {
+        String sql = "INSeRT INTO `dsm_information`.`user_info` (user_id) VALUES (?)";
+        try (PreparedStatement statement = getConnection().prepareStatement(sql)) {
+            statement.setString(1, userId);
+            statement.execute();
+        } catch (SQLException e) {
+            e.printStackTrace(System.out);
+        }
+    }
+
+    public static boolean modifyGCI(String userId, int grade, int classNum) {
+        int[] prevGCI = getGCI(userId);
+        if (prevGCI[0] == grade && prevGCI[1] == classNum) return false;
+        addUser(userId);
+        String sql = "UPDATE dsm_information.user_info t SET t.grade = ?, t.class = ? WHERE t.user_id = ?";
+        try (PreparedStatement statement = getConnection().prepareStatement(sql)) {
+            statement.setInt(1, grade);
+            statement.setInt(2, classNum);
+            statement.setString(3, userId);
+            statement.execute();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace(System.out);
+            return false;
+        }
+    }
+
+    public static int[] getGCI(String userId) {
+        String sql = "SELECT * FROM `dsm_information`.`user_info` WHERE user_id = ?";
+        try (PreparedStatement statement = getConnection().prepareStatement(sql)) {
+            statement.setString(1, userId);
+            ResultSet result = statement.executeQuery();
+            if (result.next()) return new int[] {result.getInt("grade"), result.getInt("class")};
+            return new int[] {0, 0};
+        } catch (SQLException e) {
+            e.printStackTrace(System.out);
+            return new int[] {0, 0};
+        }
+    }
+
     public static void getEvents(String userId, ReplyCallbackAction action) {
         String sql = "SELECT * FROM `dsm_information`.`eventtable` WHERE userId = ?;";
         try (PreparedStatement statement = getConnection().prepareStatement(sql)) {
@@ -148,6 +188,16 @@ public class SQLUtils {
                 statement.setString(2, "419137051670347777");
                 statement.setString(3, "1285566586257674240");
                 if (statement.executeQuery().next()) return true;
+            } catch (SQLException e) {
+                e.printStackTrace(System.out);
+            }
+        } else {
+            String deleteSQL = "DELETE FROM `dsm_information`.`messagelog` WHERE input_message=? AND (user_id != ?) AND (user_id != ?);";
+            try (PreparedStatement statement = getConnection().prepareStatement(deleteSQL)) {
+                statement.setString(1, inputMessage);
+                statement.setString(2, "419137051670347777");
+                statement.setString(3, "1285566586257674240");
+                statement.execute();
             } catch (SQLException e) {
                 e.printStackTrace(System.out);
             }

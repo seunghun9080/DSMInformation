@@ -15,16 +15,19 @@ public class StringUtils {
 
     private static final JsonArray rules = FileUtils.getRules();
 
-    public static boolean outCensor(String s) {
+    public static String censor(String s) {
         for (JsonElement rule : rules) {
             for (JsonElement singleRule : rule.getAsJsonObject().getAsJsonArray("elements")) {
                 Matcher matcher = Pattern
                         .compile(singleRule.getAsJsonObject().get("regex").getAsString())
                         .matcher(normalize(singleRule.getAsJsonObject().has("separate") ? divideKorean(s) : s));
-                if (matcher.find()) return true;
+                Matcher matcher2 = Pattern
+                        .compile(singleRule.getAsJsonObject().get("regex").getAsString())
+                        .matcher(singleRule.getAsJsonObject().has("separate") ? divideKorean(s) : s);
+                if (matcher.find() || matcher2.find()) return singleRule.getAsJsonObject().get("name").getAsString();
             }
         }
-        return false;
+        return null;
     }
 
     public static @NotNull String normalize(@NotNull String s) {
@@ -57,7 +60,10 @@ public class StringUtils {
                 // U+2800 점자 패턴 공백
                 // U+17B5 크메르어 모음 고유의 Aa
                 // U+1CBB, U+1CBC Georgian Extended: 빈 셀
-                .replaceAll("[\\s\\t\\d\\u200B\\u115F\\u1160\\u3164\\uFFA0\\u2800\\u17B5\\u1CBB\\u1CBC]", "");
+                .replaceAll("[\\s\\t\\d\\u200B\\u115F\\u1160\\u3164\\uFFA0\\u2800\\u17B5\\u1CBB\\u1CBC]", "")
+
+                // 숫자
+                .replaceAll("\\d", "");
     }
     public static char[] divideKorean(char c) {
         if (!isKorean(c)) return new char[] {c};

@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -23,7 +22,6 @@ import java.io.InputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -89,11 +87,18 @@ public class DiscordListener implements EventListener {
 				}
 				case "시간표" -> {
 					OptionMapping gc = event.getOption("학반");
+					int[] gci;
+					String addition = "";
 					if (gc == null || !gc.getAsString().matches("^[123]-[1234]$")) {
-						event.reply("학년이랑 반이 있어야 시간표를 알려주지..").queue();
-						return;
+						gci = SQLUtils.getGCI(event.getUser().getId());
+						if (gci[0] == 0) {
+							event.reply("학년이랑 반이 있어야 시간표를 알려주지..").queue();
+							return;
+						}
+					} else {
+						gci = Arrays.stream(gc.getAsString().split("-")).mapToInt(Integer::parseInt).toArray();
+						if (SQLUtils.modifyGCI(event.getUser().getId(), gci[0], gci[1])) addition = "다음부터 학반은 " + gci[0] + "-" + gci[1] + "로 맞춰줄게.";
 					}
-					int[] gci = Arrays.stream(gc.getAsString().split("-")).mapToInt(Integer::parseInt).toArray();
 					JsonArray arr = URLUtils.parseTimeTable(URLUtils.baseTimeTable(), gci[0], gci[1]);
 					BufferedImage image = ImageUtils.renderTimeTable(arr, gci[0], gci[1]);
 					InputStream is = ImageUtils.bufferedImageToInputStream(image);
@@ -101,7 +106,7 @@ public class DiscordListener implements EventListener {
 						event.reply("내 시간표가 물에 젖었어. 나중에 다시 시도해줘.").queue();
 						return;
 					}
-					event.replyFiles(FileUpload.fromData(is, gci[0] + "-" + gci[1] + "-timeTable.png")).queue();
+					event.replyFiles(FileUpload.fromData(is, gci[0] + "-" + gci[1] + "-timeTable.png")).addContent(addition).queue();
 				}
 				case "일정추가" -> {
 					OptionMapping date = event.getOption("날짜");
@@ -189,12 +194,17 @@ public class DiscordListener implements EventListener {
 							event.reply("너도 이름 두번씩 불러줄까? " + event.getUser().getAsMention() + event.getUser().getAsMention()).setAllowedMentions(new ArrayList<>()).queue();
 							return;
 						}
-						if (StringUtils.outCensor(out.getAsString())) {
-							event.reply("내가 그런 말 할 이미지가 아니라는건 알고 있지?").queue();
-							if (event.isFromGuild()) {
-								Member member = event.getMember();
-								if (member != null) member.timeoutFor(Duration.ofMinutes(1)).reason("검열 적발").queue();
-							}
+						String s;
+						if ((s = StringUtils.censor(in.getAsString())) != null) {
+							event.reply("내가 그런 말 할 이미지가 아니라는건 알고 있지?\n-# 검열 내용: " + s).queue();
+							return;
+						}
+						if ((s = StringUtils.censor(out.getAsString())) != null) {
+							event.reply("내가 그런 말 할 이미지가 아니라는건 알고 있지?\n-# 검열 내용: " + s).queue();
+							return;
+						}
+						if ((s = StringUtils.censor(in.getAsString() + out.getAsString())) != null) {
+							event.reply("내가 그런 말 할 이미지가 아니라는건 알고 있지?\n-# 검열 내용: " + s).queue();
 							return;
 						}
 						if (SQLUtils.addMessage(in.getAsString(), out.getAsString(), event.getUser().getId())) {

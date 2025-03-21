@@ -841,7 +841,7 @@
       },
       {
         "name": "당신의 체위 방식은 궁금하지 않습니다",
-        "regex": "정상위|역상위|기승위|후배위|[쓰스]리[썸섬]|항문성교|스마타",
+        "regex": "정상위|역상위|기승위|후배위|[쓰스]리[썸섬]|항문성교|스마타|파이즈리",
         "ruleType": "Black"
       },
       {
@@ -948,6 +948,26 @@
         "name": "따먹다",
         "regex": "따먹어[버줄]",
         "ruleType": "Black"
+      },
+      {
+        "name": "로리",
+        "regex": "로리",
+        "ruleType": "Black"
+      },
+      {
+        "name": "쇼타",
+        "regex": "쇼타",
+        "ruleType": "Black"
+      },
+      {
+        "name": "와캬퍄헉농쭉ㅋㅋ",
+        "regex": "((와캬[퍄파]헉)|(농|쭉))+",
+        "ruleType": "Black"
+      },
+      {
+        "name": "6974",
+        "regex": "69|74",
+        "ruleType": "Black"
       }
     ]
   },
@@ -972,7 +992,7 @@
       },
       {
         "name": "Nigger",
-        "regex": "nigga|nigger",
+        "regex": "nigga|nigger|n1gger|n1gga",
         "ruleType": "Black"
       },
       {
@@ -1277,6 +1297,11 @@
     "name": "정치 발언 금지",
     "description": "정치 발언은 안돼요",
     "elements": [
+      {
+        "name": "나의 투쟁",
+        "regex": "나의 투쟁",
+        "ruleType": "Black"
+      },
       {
         "name": "고노무 (노무현 대통령 비하발언)",
         "regex": "고노무",
@@ -1984,7 +2009,7 @@
       },
       {
         "name": "네?",
-        "regex": "우주가(나서서)?도와(준다줍니다)",
+        "regex": "우주가(나서서)?도와(준다|줍니다)",
         "ruleType": "Black"
       },
       {
@@ -2015,12 +2040,38 @@
     "elements": [
       {
         "name": "HTTP URL",
-        "regex": "http://[^ ]+",
+        "regex": "http:(//)?[^ ]+",
         "ruleType": "Black"
       },
       {
         "name": "HTTPS URL",
-        "regex": "https://[^ ]+",
+        "regex": "https:(//)?[^ ]+",
+        "ruleType": "Black"
+      }
+    ]
+  },
+  {
+    "name": "일본어 금지",
+    "description": "와따시 일본어 못쓰는데스",
+    "elements": [
+      {
+        "name": "히라가나",
+        "regex": "[ぁ-ん]",
+        "ruleType": "Black"
+      },
+      {
+        "name": "가타카나",
+        "regex": "[ァ-ン]",
+        "ruleType": "Black"
+      },
+      {
+        "name": "아이누어 확장",
+        "regex": "[ㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ]",
+        "ruleType": "Black"
+      },
+      {
+        "name": "한자",
+        "regex": "[\\u4E00-\\u9FFF]+",
         "ruleType": "Black"
       }
     ]
